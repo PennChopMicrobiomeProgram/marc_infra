@@ -1,0 +1,1 @@
+*/10 * * * * /usr/local/bin/sync_db.sh >> /var/log/cron.log 2>&1

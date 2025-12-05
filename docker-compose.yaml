@@ -1,67 +1,55 @@
-version: "3.9"
-
 networks:
   appnet:
     driver: bridge
 
+x-marc-web-base: &marc-web-base
+  restart: unless-stopped
+  networks: [appnet]
+  volumes:
+    - ./data:/data:ro
+  environment:
+    MARC_DB_URL: sqlite:////data/marc.sqlite
+    MARC_DB_LAST_SYNC: /data/last_sync.txt
+  depends_on:
+    - db-sync
+
+x-marc-web-prod: &marc-web-prod
+  <<: *marc-web-base
+  image: ctbushman/marc_web:0.3.5
+
+x-marc-web-dev: &marc-web-dev
+  <<: *marc-web-base
+  image: ctbushman/marc_web:0.3.5
+
 services:
+  db-sync:
+    container_name: marc-db-sync
+    image: alpine:3.20
+    restart: unless-stopped
+    command: ["/bin/sh", "-c", "crond -f -l 2"]
+    environment:
+      SOURCE_DB_PATH: /nfs/marc.sqlite
+      LOCAL_DB_PATH: /data/marc.sqlite
+      LAST_SYNC_PATH: /data/last_sync.txt
+    volumes:
+      # Set MARC_NFS_DB_PATH in your environment to the path of the source marc.sqlite file on your system.
+      - ${MARC_NFS_DB_PATH}:/nfs/marc.sqlite:ro
+      - ./data:/data
+      - ./scripts/db-sync.crontab:/etc/crontabs/root:ro
+      - ./scripts/sync_db.sh:/usr/local/bin/sync_db.sh:ro
+
   marc-web-prod-a:
+    <<: *marc-web-prod
     container_name: marc-web-prod-a
-    image: ghcr.io/pennchopmicrobiomeprogram/marc_web:prod
-    restart: unless-stopped
-    networks: [appnet]
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 5s
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: "0.5"
-
   marc-web-prod-b:
+    <<: *marc-web-prod
     container_name: marc-web-prod-b
-    image: ghcr.io/pennchopmicrobiomeprogram/marc_web:prod
-    restart: unless-stopped
-    networks: [appnet]
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 5s
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: "0.5"
-
   marc-web-dev-a:
+    <<: *marc-web-dev
     container_name: marc-web-dev-a
-    image: ghcr.io/pennchopmicrobiomeprogram/marc_web:dev
-    restart: unless-stopped
-    networks: [appnet]
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 5s
-
   marc-web-dev-b:
+    <<: *marc-web-dev
     container_name: marc-web-dev-b
-    image: ghcr.io/pennchopmicrobiomeprogram/marc_web:dev
-    restart: unless-stopped
-    networks: [appnet]
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 5s
 
   nginx:
     container_name: nginx
