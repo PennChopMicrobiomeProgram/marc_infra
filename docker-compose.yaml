@@ -32,7 +32,8 @@ services:
       LOCAL_DB_PATH: /data/marc.sqlite
       LAST_SYNC_PATH: /data/last_sync.txt
     volumes:
-      - ${MARC_NFS_DB_PATH:-/mnt/isilon/marc_genomics/marc_web_db_RO/marc.sqlite}:/nfs/marc.sqlite:ro
+      # Set MARC_NFS_DB_PATH in your environment to the path of the source marc.sqlite file on your system.
+      - ${MARC_NFS_DB_PATH}:/nfs/marc.sqlite:ro
       - ./data:/data
       - ./scripts/db-sync.crontab:/etc/crontabs/root:ro
       - ./scripts/sync_db.sh:/usr/local/bin/sync_db.sh:ro
