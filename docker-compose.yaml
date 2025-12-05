@@ -6,18 +6,22 @@ networks:
 services:
   marc-web-prod-a:
     image: ghcr.io/pennchopmicrobiomeprogram/marc_web:prod
+    restart: unless-stopped
     networks: [appnet]
 
   marc-web-prod-b:
     image: ghcr.io/pennchopmicrobiomeprogram/marc_web:prod
+    restart: unless-stopped
     networks: [appnet]
 
   marc-web-dev-a:
     image: ghcr.io/pennchopmicrobiomeprogram/marc_web:dev
+    restart: unless-stopped
     networks: [appnet]
 
   marc-web-dev-b:
     image: ghcr.io/pennchopmicrobiomeprogram/marc_web:dev
+    restart: unless-stopped
     networks: [appnet]
 
   nginx:
