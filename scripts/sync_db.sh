@@ -13,7 +13,7 @@ if [ ! -r "$SOURCE_DB_PATH" ]; then
   exit 1
 fi
 
-TMP_PATH="${LOCAL_DB_PATH}.tmp$$"
+TMP_PATH="$(mktemp "${LOCAL_DB_PATH}.tmp.XXXXXX")"
 cp -f "$SOURCE_DB_PATH" "$TMP_PATH"
 chmod 0644 "$TMP_PATH"
 mv "$TMP_PATH" "$LOCAL_DB_PATH"
