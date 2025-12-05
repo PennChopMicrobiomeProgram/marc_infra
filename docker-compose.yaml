@@ -28,23 +28,28 @@ services:
 
   marc-web-dev-a:
     image: ghcr.io/pennchopmicrobiomeprogram/marc_web:dev
+  marc-web-prod-a:
+    container_name: marc-web-prod-a
+    image: ghcr.io/pennchopmicrobiomeprogram/marc_web:prod
     networks: [appnet]
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: '0.5'
 
-  marc-web-dev-b:
+  marc-web-prod-b:
+    container_name: marc-web-prod-b
+    image: ghcr.io/pennchopmicrobiomeprogram/marc_web:prod
+    networks: [appnet]
+
+  marc-web-dev-a:
+    container_name: marc-web-dev-a
     image: ghcr.io/pennchopmicrobiomeprogram/marc_web:dev
     networks: [appnet]
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: '0.5'
+
+  marc-web-dev-b:
+    container_name: marc-web-dev-b
+    image: ghcr.io/pennchopmicrobiomeprogram/marc_web:dev
+    networks: [appnet]
 
   nginx:
+    container_name: nginx
     image: nginx:1.27-alpine
     ports:
       - "8080:80"
