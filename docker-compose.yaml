@@ -10,6 +10,8 @@ x-marc-web-base: &marc-web-base
   environment:
     MARC_DB_URL: sqlite:////data/marc.sqlite
     MARC_DB_LAST_SYNC: /data/last_sync.txt
+    MODEL: gpt-4o-mini
+    OPEN_API_KEY: ""
   depends_on:
     - db-sync
 
