@@ -40,6 +40,7 @@ If the source database is unavailable or unreadable, `db-sync` will log an error
 Start the stack with Podman Compose:
 
 ```bash
+export OPENAI_API_KEY=your_api_key_here
 podman-compose up -d
 ```
 
