@@ -41,16 +41,6 @@ x-marc-web-dev: &marc-web-dev
   image: ctbushman/marc_web:0.3.5
 
 services:
-  logrotate:
-    container_name: marc-logrotate
-    image: alpine:3.20
-    restart: unless-stopped
-    command: ["/bin/sh", "-c", "apk add --no-cache logrotate && crond -f -l 2"]
-    volumes:
-      - /var/log/marc:/var/log/marc
-      - ./scripts/logrotate.marc:/etc/logrotate.d/marc:ro
-      - ./scripts/logrotate.crontab:/etc/crontabs/root:ro
-
   db-sync:
     container_name: marc-db-sync
     image: alpine:3.20
