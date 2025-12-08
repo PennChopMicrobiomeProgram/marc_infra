@@ -54,3 +54,14 @@ To tear down:
 ```bash
 podman-compose down
 ```
+
+## Logging
+
+- Container stdout/stderr for each `marc_web` instance is written to the host at `/var/log/marc/<service>.log` using Podman's `k8s-file` log driver. NGINX logs also land in `/var/log/marc`.
+- A dedicated `marc-logrotate` service runs hourly log rotation with compression for any `/var/log/marc/*.log` files to keep them bounded (14 backups, 50 MB max size before rotation).
+- Ensure the log directory exists on the host before starting the stack:
+
+```bash
+sudo mkdir -p /var/log/marc
+sudo chown $USER /var/log/marc
+```
