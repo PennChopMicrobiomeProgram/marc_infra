@@ -1,5 +1,4 @@
 /var/log/marc/*.log {
-    daily
     rotate 14
     size 50M
     compress
