@@ -46,8 +46,10 @@ podman-compose up -d
 
 Then visit:
 
+- http://localhost:8080/ → simple nginx landing page confirming the proxy is reachable with links to each pool
 - http://localhost:8080/prod/ → load-balanced across `marc-web-prod-a` and `marc-web-prod-b`
 - http://localhost:8080/dev/ → load-balanced across `marc-web-dev-a` and `marc-web-dev-b`
+- http://localhost:8080/health → nginx health endpoint returning JSON for quick checks
 
 To tear down:
 
