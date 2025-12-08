@@ -46,11 +46,24 @@ podman-compose up -d
 
 Then visit:
 
+- http://localhost:8080/ → simple nginx landing page confirming the proxy is reachable with links to each pool
 - http://localhost:8080/prod/ → load-balanced across `marc-web-prod-a` and `marc-web-prod-b`
 - http://localhost:8080/dev/ → load-balanced across `marc-web-dev-a` and `marc-web-dev-b`
+- http://localhost:8080/health → nginx health endpoint returning JSON for quick checks
 
 To tear down:
 
 ```bash
 podman-compose down
+```
+
+## Logging
+
+- Container stdout/stderr for each service (`marc_web` instances, nginx, and `db-sync`) is written to the host at `/var/log/marc/<service>.log` using Podman's `k8s-file` log driver.
+- Logs rotate automatically via the log driver once they reach 10 MB, keeping up to 5 files per service.
+- Ensure the log directory exists on the host before starting the stack:
+
+```bash
+sudo mkdir -p /var/log/marc
+sudo chown $USER /var/log/marc
 ```

@@ -2,6 +2,12 @@ networks:
   appnet:
     driver: bridge
 
+x-log-options: &marc-log-options
+  driver: k8s-file
+  options: &marc-log-driver-options
+    max_size: 10m
+    max_file: 5
+
 x-marc-web-base: &marc-web-base
   restart: unless-stopped
   networks: [appnet]
@@ -20,7 +26,7 @@ x-marc-web-base: &marc-web-base
         "CMD",
         "python",
         "-c",
-        "import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://localhost:8080/health').getcode()<400 else 1)",
+        "import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://localhost:80/health').getcode()<400 else 1)",
       ]
     interval: 30s
     timeout: 5s
@@ -40,6 +46,11 @@ services:
     image: alpine:3.20
     restart: unless-stopped
     command: ["/bin/sh", "-c", "crond -f -l 2"]
+    logging:
+      <<: *marc-log-options
+      options:
+        <<: *marc-log-driver-options
+        path: /var/log/marc/marc-db-sync.log
     environment:
       SOURCE_DB_PATH: /nfs/marc.sqlite
       LOCAL_DB_PATH: /data/marc.sqlite
@@ -54,23 +65,49 @@ services:
   marc-web-prod-a:
     <<: *marc-web-prod
     container_name: marc-web-prod-a
+    logging:
+      <<: *marc-log-options
+      options:
+        <<: *marc-log-driver-options
+        path: /var/log/marc/marc-web-prod-a.log
   marc-web-prod-b:
     <<: *marc-web-prod
     container_name: marc-web-prod-b
+    logging:
+      <<: *marc-log-options
+      options:
+        <<: *marc-log-driver-options
+        path: /var/log/marc/marc-web-prod-b.log
   marc-web-dev-a:
     <<: *marc-web-dev
     container_name: marc-web-dev-a
+    logging:
+      <<: *marc-log-options
+      options:
+        <<: *marc-log-driver-options
+        path: /var/log/marc/marc-web-dev-a.log
   marc-web-dev-b:
     <<: *marc-web-dev
     container_name: marc-web-dev-b
+    logging:
+      <<: *marc-log-options
+      options:
+        <<: *marc-log-driver-options
+        path: /var/log/marc/marc-web-dev-b.log
 
   nginx:
     container_name: nginx
     image: nginx:1.27-alpine
+    logging:
+      <<: *marc-log-options
+      options:
+        <<: *marc-log-driver-options
+        path: /var/log/marc/nginx.log
     ports:
       - "8080:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /var/log/marc:/var/log/marc
     depends_on:
       marc-web-prod-a:
         condition: service_healthy
