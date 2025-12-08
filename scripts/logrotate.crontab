@@ -1,0 +1,2 @@
+# Rotate MARC logs every hour to keep files bounded
+0 * * * * /usr/sbin/logrotate -s /var/log/marc/logrotate.status /etc/logrotate.conf
