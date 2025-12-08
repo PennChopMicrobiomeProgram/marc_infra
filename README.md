@@ -67,3 +67,7 @@ podman-compose down
 sudo mkdir -p /var/log/marc
 sudo chown $USER /var/log/marc
 ```
+
+## TLS/SSL
+
+Hopefully we can rely on IS to provide us certs or terminate SSL before it even reaches our VM.
