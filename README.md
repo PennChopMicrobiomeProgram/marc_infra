@@ -59,8 +59,8 @@ podman-compose down
 
 ## Logging
 
-- Container stdout/stderr for each `marc_web` instance is written to the host at `/var/log/marc/<service>.log` using Podman's `k8s-file` log driver. NGINX logs also land in `/var/log/marc`.
-- A dedicated `marc-logrotate` service runs hourly log rotation with compression for any `/var/log/marc/*.log` files to keep them bounded (14 backups, 50 MB max size before rotation).
+- Container stdout/stderr for each service (`marc_web` instances, nginx, and `db-sync`) is written to the host at `/var/log/marc/<service>.log` using Podman's `k8s-file` log driver.
+- Logs rotate automatically via the log driver once they reach 10 MB, keeping up to 5 files per service.
 - Ensure the log directory exists on the host before starting the stack:
 
 ```bash
