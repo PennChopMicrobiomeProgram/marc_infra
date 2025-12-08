@@ -1,0 +1,111 @@
+worker_processes auto;
+
+events {}
+
+http {
+    access_log /var/log/marc/nginx_access.log;
+    error_log  /var/log/marc/nginx_error.log;
+
+    upstream marc_web_prod_backend {
+        server marc-web-prod-a:80;
+        server marc-web-prod-b:80;
+    }
+
+    upstream marc_web_dev_backend {
+        server marc-web-dev-a:80;
+        server marc-web-dev-b:80;
+    }
+
+    server {
+        listen 80;
+        server_name ${LETSENCRYPT_DOMAIN:-_};
+
+        location /.well-known/acme-challenge/ {
+            root /var/www/certbot;
+        }
+
+        location = / {
+            default_type text/html;
+            return 200 "<!doctype html><html><head><title>marc gateway</title></head><body><h1>marc nginx is alive</h1><p>You have reached the marc reverse proxy.</p><ul><li><a href=\"/prod/\">Production</a></li><li><a href=\"/dev/\">Development</a></li></ul></body></html>";
+        }
+
+        location = /health {
+            default_type application/json;
+            return 200 '{"status":"ok"}';
+        }
+
+        location /prod/ {
+            proxy_pass http://marc_web_prod_backend/;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-Prefix /prod;
+            proxy_set_header X-Script-Name /prod;
+            proxy_redirect / /prod/;
+        }
+
+        location /dev/ {
+            proxy_pass http://marc_web_dev_backend/;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-Prefix /dev;
+            proxy_set_header X-Script-Name /dev;
+            proxy_redirect / /dev/;
+        }
+
+        location / {
+            return 301 https://$host$request_uri;
+        }
+    }
+
+    server {
+        listen 443 ssl http2;
+        server_name ${LETSENCRYPT_DOMAIN:-_};
+
+        ssl_certificate /etc/letsencrypt/live/${LETSENCRYPT_DOMAIN:-_}/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/${LETSENCRYPT_DOMAIN:-_}/privkey.pem;
+        ssl_session_cache shared:SSL:10m;
+        ssl_session_timeout 1d;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_prefer_server_ciphers off;
+
+        location /.well-known/acme-challenge/ {
+            root /var/www/certbot;
+        }
+
+        location = / {
+            default_type text/html;
+            return 200 "<!doctype html><html><head><title>marc gateway</title></head><body><h1>marc nginx is alive</h1><p>You have reached the marc reverse proxy.</p><ul><li><a href=\"/prod/\">Production</a></li><li><a href=\"/dev/\">Development</a></li></ul></body></html>";
+        }
+
+        location = /health {
+            default_type application/json;
+            return 200 '{"status":"ok"}';
+        }
+
+        location /prod/ {
+            proxy_pass http://marc_web_prod_backend/;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-Prefix /prod;
+            proxy_set_header X-Script-Name /prod;
+            proxy_redirect / /prod/;
+        }
+
+        location /dev/ {
+            proxy_pass http://marc_web_dev_backend/;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-Prefix /dev;
+            proxy_set_header X-Script-Name /dev;
+            proxy_redirect / /dev/;
+        }
+    }
+}

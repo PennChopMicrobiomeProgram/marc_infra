@@ -98,15 +98,22 @@ services:
   nginx:
     container_name: nginx
     image: nginx:1.27-alpine
+    command: ["/bin/sh", "-c", "envsubst < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && exec nginx -g 'daemon off;'" ]
+    environment:
+      LETSENCRYPT_DOMAIN: ${LETSENCRYPT_DOMAIN:-localhost}
     logging:
       <<: *marc-log-options
       options:
         <<: *marc-log-driver-options
         path: /var/log/marc/nginx.log
     ports:
-      - "8080:80"
+      - "80:80"
+      - "443:443"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/nginx.conf.template:/etc/nginx/nginx.conf.template:ro
+      - ./nginx/entrypoint.d:/docker-entrypoint.d:ro
+      - ./nginx/www:/var/www/certbot
+      - ./letsencrypt:/etc/letsencrypt
       - /var/log/marc:/var/log/marc
     depends_on:
       marc-web-prod-a:
@@ -117,4 +124,38 @@ services:
         condition: service_healthy
       marc-web-dev-b:
         condition: service_healthy
+    networks: [appnet]
+
+  certbot:
+    container_name: certbot
+    image: certbot/certbot:latest
+    depends_on:
+      - nginx
+    environment:
+      LETSENCRYPT_DOMAIN: ${LETSENCRYPT_DOMAIN}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL}
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        set -euo pipefail
+        if [ -z "${LETSENCRYPT_DOMAIN:-}" ] || [ -z "${LETSENCRYPT_EMAIL:-}" ]; then
+          echo "LETSENCRYPT_DOMAIN and LETSENCRYPT_EMAIL must be set to request certificates; certbot will stay idle." >&2
+          tail -f /dev/null
+        fi
+
+        while :; do
+          if [ ! -f "/etc/letsencrypt/live/${LETSENCRYPT_DOMAIN}/fullchain.pem" ]; then
+            certbot certonly --webroot -w /var/www/certbot \
+              --email "${LETSENCRYPT_EMAIL}" \
+              --agree-tos --no-eff-email \
+              -d "${LETSENCRYPT_DOMAIN}" || true
+          else
+            certbot renew --webroot -w /var/www/certbot --quiet || true
+          fi
+          sleep 12h & wait $!
+        done
+    volumes:
+      - ./letsencrypt:/etc/letsencrypt
+      - ./nginx/www:/var/www/certbot
     networks: [appnet]
