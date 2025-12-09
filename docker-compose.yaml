@@ -59,6 +59,7 @@ services:
       # Set MARC_NFS_DB_PATH in your environment to the path of the source marc.sqlite file on your system.
       - ${MARC_NFS_DB_PATH}:/nfs/marc.sqlite:ro
       - ./data:/data
+      - /var/log/marc:/var/log/marc
       - ./scripts/db-sync.crontab:/etc/crontabs/root:ro
       - ./scripts/sync_db.sh:/usr/local/bin/sync_db.sh:ro
 
