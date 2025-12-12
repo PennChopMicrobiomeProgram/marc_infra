@@ -34,11 +34,11 @@ x-marc-web-base: &marc-web-base
 
 x-marc-web-prod: &marc-web-prod
   <<: *marc-web-base
-  image: ctbushman/marc_web:0.3.5
+  image: ctbushman/marc_web:0.3.7
 
 x-marc-web-dev: &marc-web-dev
   <<: *marc-web-base
-  image: ctbushman/marc_web:0.3.5
+  image: ctbushman/marc_web:0.3.7
 
 services:
   db-sync:
