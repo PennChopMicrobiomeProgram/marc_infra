@@ -24,6 +24,7 @@ if [ ! -r "$SOURCE_DB_PATH" ]; then
 fi
 
 TMP_PATH="$(mktemp "${LOCAL_DB_PATH}.tmp.XXXXXX")"
+trap 'rm -f "$TMP_PATH"' EXIT
 cp -f "$SOURCE_DB_PATH" "$TMP_PATH" || fail "Failed to copy database"
 chmod 0644 "$TMP_PATH" || fail "Failed to set permissions on temporary file"
 mv "$TMP_PATH" "$LOCAL_DB_PATH" || fail "Failed to move temporary database into place"
