@@ -1,0 +1,33 @@
+networks:
+  appnet:
+    external: true
+    name: marc_appnet
+
+x-log-options: &marc-log-options
+  driver: k8s-file
+  options: &marc-log-driver-options
+    max_size: 10m
+    max_file: 5
+
+services:
+  db-sync:
+    container_name: marc-db-sync
+    image: alpine:3.20
+    restart: unless-stopped
+    command: ["/bin/sh", "-c", "crond -f -l 2"]
+    logging:
+      <<: *marc-log-options
+      options:
+        <<: *marc-log-driver-options
+        path: /var/log/marc/marc-db-sync.log
+    environment:
+      SOURCE_DB_PATH: /nfs/marc.sqlite
+      LOCAL_DB_PATH: /data/marc.sqlite
+      LAST_SYNC_PATH: /data/last_sync.txt
+    volumes:
+      - ${MARC_NFS_DB_PATH}:/nfs/marc.sqlite:ro
+      - ../data:/data
+      - /var/log/marc:/var/log/marc
+      - ../scripts/db-sync.crontab:/etc/crontabs/root:ro
+      - ../scripts/sync_db.sh:/usr/local/bin/sync_db.sh:ro
+    networks: [appnet]

@@ -1,28 +1,41 @@
 # marc_infra
 
-Podman Compose stack for running the `marc_web` application with both production and development deployments behind a single NGINX load balancer.
+Podman Compose stacks for running the `marc_web` application with separate production, development, database sync, and nginx layers that all attach to a shared Podman network.
 
 ## Layout
 
 ```
 marc_infra/
-├── data/                 # local copy of the SQLite database (synced from NFS)
-├── dev/                  # optional context for dev image build
-├── prod/                 # optional context for prod image build
+├── data/                  # local copy of the SQLite database (synced from NFS)
+├── db-sync/
+│   └── docker-compose.yaml
+├── dev/
+│   └── docker-compose.yaml
+├── prod/
+│   └── docker-compose.yaml
 ├── nginx/
-│   └── nginx.conf        # reverse proxy + load balancer configuration
-├── scripts/              # cron + sync helper scripts
-└── docker-compose.yaml   # podman-compose entrypoint
+│   ├── docker-compose.yaml
+│   └── nginx.conf         # reverse proxy + load balancer configuration
+├── scripts/               # cron + sync helper scripts
+└── README.md
 ```
 
-## Services
+## Shared network
 
-- **db-sync**: copies the NFS-hosted SQLite database to `./data/marc.sqlite` on startup and every 10 minutes using cron while writing the latest sync timestamp.
-- **marc-web-prod-a / marc-web-prod-b**: two production instances of `marc_web` sharing the `appnet` bridge network and reading the local SQLite database read-only.
-- **marc-web-dev-a / marc-web-dev-b**: two development instances of `marc_web` on the same network, also mounting the SQLite database read-only.
-- **nginx**: reverse proxy and path-based load balancer, exposing port `8080` on the host. Traffic to `/prod/` is sent to the production pool; `/dev/` is sent to the development pool.
+All stacks attach to the same Podman network so they can resolve one another by container name (e.g., `marc-web-prod-a`). Create it once before bringing up any stack:
 
-Images default to `ctbushman/marc_web:0.3.5`. Swap images or add build contexts in `prod/` and `dev/` if you need to build locally.
+```bash
+podman network create marc_appnet
+```
+
+## Services by stack
+
+- **db-sync** (`db-sync/docker-compose.yaml`): copies the NFS-hosted SQLite database to `./data/marc.sqlite` on startup and every 10 minutes using cron while writing the latest sync timestamp.
+- **Production web** (`prod/docker-compose.yaml`): two production instances of `marc_web` reading the shared SQLite database read-only.
+- **Development web** (`dev/docker-compose.yaml`): two development instances of `marc_web` on the same network, also mounting the SQLite database read-only.
+- **nginx** (`nginx/docker-compose.yaml`): reverse proxy and path-based load balancer, exposing port `8080` on the host. Traffic to `/prod/` is sent to the production pool; `/dev/` is sent to the development pool.
+
+Images default to `ctbushman/marc_web:0.3.7`. Swap images or add build contexts in `prod/` and `dev/` if you need to build locally.
 
 ## Database mounting and sync
 
@@ -37,11 +50,14 @@ If the source database is unavailable or unreadable, `db-sync` will log an error
 
 ## Usage
 
-Start the stack with Podman Compose:
+Export your API key and bring up each stack. Start `db-sync` first so the SQLite file is ready, then the web pools, and finally nginx:
 
 ```bash
 export OPENAI_API_KEY=your_api_key_here
-podman-compose up -d
+podman-compose -f db-sync/docker-compose.yaml up -d
+podman-compose -f prod/docker-compose.yaml up -d
+podman-compose -f dev/docker-compose.yaml up -d
+podman-compose -f nginx/docker-compose.yaml up -d
 ```
 
 Then visit:
@@ -51,17 +67,13 @@ Then visit:
 - http://localhost:8080/dev/ → load-balanced across `marc-web-dev-a` and `marc-web-dev-b`
 - http://localhost:8080/health → nginx health endpoint returning JSON for quick checks
 
-To tear down:
-
-```bash
-podman-compose down
-```
+To tear down, run `podman-compose -f <stack>/docker-compose.yaml down` for each stack you started.
 
 ## Logging
 
 - Container stdout/stderr for each service (`marc_web` instances, nginx, and `db-sync`) is written to the host at `/var/log/marc/<service>.log` using Podman's `k8s-file` log driver.
 - Logs rotate automatically via the log driver once they reach 10 MB, keeping up to 5 files per service.
-- Ensure the log directory exists on the host before starting the stack:
+- Ensure the log directory exists on the host before starting the stacks:
 
 ```bash
 sudo mkdir -p /var/log/marc
