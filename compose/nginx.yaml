@@ -1,0 +1,21 @@
+x-log-options: &marc-log-options
+  driver: k8s-file
+  options: &marc-log-driver-options
+    max_size: 10m
+    max_file: 5
+
+services:
+  nginx:
+    container_name: nginx
+    image: nginx:1.27-alpine
+    logging:
+      <<: *marc-log-options
+      options:
+        <<: *marc-log-driver-options
+        path: /var/log/marc/nginx.log
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /var/log/marc:/var/log/marc
+    networks: [appnet]

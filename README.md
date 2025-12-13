@@ -6,13 +6,13 @@ Podman Compose stack for running the `marc_web` application with both production
 
 ```
 marc_infra/
+├── compose/              # split compose files for common, prod, dev, and nginx
 ├── data/                 # local copy of the SQLite database (synced from NFS)
 ├── dev/                  # optional context for dev image build
 ├── prod/                 # optional context for prod image build
 ├── nginx/
 │   └── nginx.conf        # reverse proxy + load balancer configuration
-├── scripts/              # cron + sync helper scripts
-└── docker-compose.yaml   # podman-compose entrypoint
+└── scripts/              # cron + sync helper scripts (incl. rolling upgrade helper)
 ```
 
 ## Services
@@ -22,7 +22,7 @@ marc_infra/
 - **marc-web-dev-a / marc-web-dev-b**: two development instances of `marc_web` on the same network, also mounting the SQLite database read-only.
 - **nginx**: reverse proxy and path-based load balancer, exposing port `8080` on the host. Traffic to `/prod/` is sent to the production pool; `/dev/` is sent to the development pool.
 
-Images default to `ctbushman/marc_web:0.3.5`. Swap images or add build contexts in `prod/` and `dev/` if you need to build locally.
+Images default to `ctbushman/marc_web:0.3.7`. Override the prod pool with `MARC_WEB_IMAGE` or the dev pool with `MARC_WEB_DEV_IMAGE`.
 
 ## Database mounting and sync
 
@@ -37,11 +37,11 @@ If the source database is unavailable or unreadable, `db-sync` will log an error
 
 ## Usage
 
-Start the stack with Podman Compose:
+Start the stack with Podman Compose using the split files under `compose/`:
 
 ```bash
 export OPENAI_API_KEY=your_api_key_here
-podman-compose up -d
+podman compose -f compose/common.yaml -f compose/prod.yaml -f compose/dev.yaml -f compose/nginx.yaml up -d
 ```
 
 Then visit:
@@ -51,11 +51,27 @@ Then visit:
 - http://localhost:8080/dev/ → load-balanced across `marc-web-dev-a` and `marc-web-dev-b`
 - http://localhost:8080/health → nginx health endpoint returning JSON for quick checks
 
+To run only the production pool (useful for rolling upgrades), drop the dev compose file:
+
+```bash
+podman compose -f compose/common.yaml -f compose/prod.yaml -f compose/nginx.yaml up -d
+```
+
 To tear down:
 
 ```bash
-podman-compose down
+podman compose -f compose/common.yaml -f compose/prod.yaml -f compose/dev.yaml -f compose/nginx.yaml down
 ```
+
+## Rolling production upgrades
+
+A helper script is provided to roll the prod pool with zero downtime:
+
+```bash
+scripts/rolling_upgrade_prod.sh ctbushman/marc_web:<new_tag>
+```
+
+The script pulls the requested image (defaults to `ctbushman/marc_web:0.3.7` if not provided), recreates `marc-web-prod-b`, waits for its health check to pass, then repeats for `marc-web-prod-a`. It uses the production compose files so it will not disturb the dev pool.
 
 ## Logging
 
