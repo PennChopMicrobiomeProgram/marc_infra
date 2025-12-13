@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: marc-web-prod-a
+  name: marc-web-dev
 spec:
   restartPolicy: Always
   containers:
-    - name: marc-web-prod-a
+    - name: marc-web-dev
       image: ctbushman/marc_web:0.3.7
       env:
         - name: MARC_DB_URL
@@ -27,8 +27,8 @@ spec:
         httpGet:
           path: /health
           port: 80
-        initialDelaySeconds: 10
-        periodSeconds: 30
+        initialDelaySeconds: 5
+        periodSeconds: 20
         failureThreshold: 3
       livenessProbe:
         httpGet:

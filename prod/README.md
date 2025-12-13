@@ -9,7 +9,7 @@ This folder replaces the old podman-compose flow with standalone Kubernetes pod 
 - `nginx.yaml`: Front door proxy that exposes port `8080` on the host.
 
 ## Shared host paths
-The manifests mount files from this repository using absolute paths under `/workspace/marc_infra`. If you clone the repo elsewhere, update the `hostPath.path` entries so Podman can find your data, nginx config, and scripts. The database source file is expected at `/nfs/marc.sqlite`; adjust that path if your NFS mount differs.
+The manifests mount files from this repository using relative paths (for example `./data`) so you can run them directly from the cloned repo without creating `/workspace` directories. If you relocate the repo, run `podman kube play` from that checkout so the relative `hostPath.path` entries resolve correctly. The database source file is expected at `/nfs/marc.sqlite`; adjust that path if your NFS mount differs.
 
 ## Usage
 1. Ensure the `appnet` network exists:
@@ -22,6 +22,8 @@ The manifests mount files from this repository using absolute paths under `/work
    podman kube play --replace --network appnet prod/db-sync.yaml
    podman kube play --replace --network appnet prod/marc-web-prod-a.yaml
    podman kube play --replace --network appnet prod/marc-web-prod-b.yaml
+   # Optional dev pod that shares the same data and secret
+   podman kube play --replace --network appnet dev/marc-web-dev.yaml
    podman kube play --replace --network appnet prod/nginx.yaml
    ```
 3. For production upgrades, use the rolling script to cycle the prod pods one at a time:
