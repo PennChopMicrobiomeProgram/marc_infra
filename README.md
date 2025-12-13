@@ -59,14 +59,14 @@ podman-compose down
 
 ### Blue/green upgrade helper
 
-The `scripts/blue_green_upgrade.sh` helper stages a new image tag on the dev pool, waits for health, then promotes to prod with an optional confirmation pause. It updates `.env` with the active tags so future runs know which version is live.
+The `scripts/blue_green_upgrade.sh` helper stages a new image tag on the dev pool, waits for health, then promotes to prod with an optional confirmation pause. It updates `.env` with the active tags so future runs know which version is live. Run it with `sudo` so it can manage the containers, but it will invoke `podman-compose` as your user (via `SUDO_USER`) to keep access to the NFS-mounted database.
 
 ```bash
 # Stage 0.3.8 on dev, then press Enter to promote to prod
-./scripts/blue_green_upgrade.sh 0.3.8
+sudo ./scripts/blue_green_upgrade.sh 0.3.8
 
 # Fully automated promotion
-./scripts/blue_green_upgrade.sh 0.3.8 --auto-promote
+sudo ./scripts/blue_green_upgrade.sh 0.3.8 --auto-promote
 ```
 
 If the previous prod tag differs from the new one, the script prints a rollback command that restores the prior image.

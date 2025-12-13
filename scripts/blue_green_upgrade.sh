@@ -28,6 +28,18 @@ command -v podman-compose >/dev/null 2>&1 || {
   exit 1
 }
 
+if [[ $EUID -ne 0 ]]; then
+  echo "Run this script with sudo so it can manage containers" >&2
+  exit 1
+fi
+
+if [[ -z "${SUDO_USER:-}" ]]; then
+  echo "SUDO_USER is not set. Run with sudo from your user account so NFS mounts stay accessible." >&2
+  exit 1
+fi
+
+RUN_AS_USER="$SUDO_USER"
+
 if [[ $# -lt 1 ]]; then
   usage
   exit 1
@@ -76,10 +88,23 @@ set_env_var() {
   fi
 }
 
+run_compose() {
+  # Ensure podman-compose runs as the invoking user so NFS permissions are preserved.
+  sudo -u "$RUN_AS_USER" -E env "MARC_WEB_DEV_TAG=${MARC_WEB_DEV_TAG:-}" "MARC_WEB_PROD_TAG=${MARC_WEB_PROD_TAG:-}" \
+    podman-compose --env-file "$ENV_FILE" "$@"
+}
+
+redeploy_services() {
+  local services=("$@")
+  run_compose stop "${services[@]}" || true
+  run_compose rm -f "${services[@]}" || true
+  run_compose up -d "${services[@]}"
+}
+
 wait_for_health() {
   local service="$1" retries=20
   while (( retries > 0 )); do
-    status=$(podman inspect -f '{{.State.Health.Status}}' "$service" 2>/dev/null || echo "unknown")
+    status=$(sudo -u "$RUN_AS_USER" podman inspect -f '{{.State.Health.Status}}' "$service" 2>/dev/null || echo "unknown")
     if [[ "$status" == "healthy" ]]; then
       return 0
     fi
@@ -92,7 +117,7 @@ wait_for_health() {
 
 echo "Staging new image tag $NEW_TAG to dev pool..."
 set_env_var MARC_WEB_DEV_TAG "$NEW_TAG" "$ENV_FILE"
-MARC_WEB_DEV_TAG="$NEW_TAG" podman-compose up -d marc-web-dev-a marc-web-dev-b
+MARC_WEB_DEV_TAG="$NEW_TAG" redeploy_services marc-web-dev-a marc-web-dev-b
 wait_for_health marc-web-dev-a
 wait_for_health marc-web-dev-b
 echo "Dev pool healthy on tag $NEW_TAG. Validate via /dev/."
@@ -104,7 +129,7 @@ fi
 PREVIOUS_PROD_TAG=$(grep -E '^MARC_WEB_PROD_TAG=' "$ENV_FILE" | sed 's/^MARC_WEB_PROD_TAG=//')
 echo "Promoting to prod (previous tag: ${PREVIOUS_PROD_TAG:-unset})..."
 set_env_var MARC_WEB_PROD_TAG "$NEW_TAG" "$ENV_FILE"
-MARC_WEB_PROD_TAG="$NEW_TAG" podman-compose up -d marc-web-prod-a marc-web-prod-b nginx
+MARC_WEB_PROD_TAG="$NEW_TAG" redeploy_services marc-web-prod-a marc-web-prod-b nginx
 wait_for_health marc-web-prod-a
 wait_for_health marc-web-prod-b
 
