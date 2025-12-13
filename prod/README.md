@@ -9,7 +9,20 @@ This folder replaces the old podman-compose flow with standalone Kubernetes pod 
 - `nginx.yaml`: Front door proxy that exposes port `8080` on the host.
 
 ## Shared host paths
-The manifests mount files from this repository using paths relative to the repo root (for example `../data` from within `prod/`) so you can run them directly from the cloned repo without creating `/workspace` directories. If you relocate the repo, run `podman kube play` from that checkout so the relative `hostPath.path` entries resolve correctly. The database source file is expected at `/mnt/isilon/marc_genomics/marc_web_db_RO/marc.sqlite`; adjust that path if your NFS mount differs.
+To avoid fragile relative paths, the manifests expect the repository to be available at `/srv/marc_infra`:
+
+- `/srv/marc_infra/data`: application database and sync metadata
+- `/srv/marc_infra/nginx/nginx.conf`: nginx configuration file
+- `/srv/marc_infra/scripts/db-sync.crontab` and `/srv/marc_infra/scripts/sync_db.sh`: db sync helpers
+
+If your checkout lives elsewhere, create a root-owned symlink so Podman can mount the files consistently:
+
+```bash
+sudo mkdir -p /srv
+sudo ln -snf "$(pwd)" /srv/marc_infra
+```
+
+The database source file is expected at `/mnt/isilon/marc_genomics/marc_web_db_RO/marc.sqlite`; adjust that path if your NFS mount differs.
 
 ## Usage
 1. Ensure the `appnet` network exists:

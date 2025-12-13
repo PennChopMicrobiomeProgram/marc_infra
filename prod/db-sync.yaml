@@ -40,7 +40,7 @@ spec:
         type: File
     - name: data
       hostPath:
-        path: ../data
+        path: /srv/marc_infra/data
         type: DirectoryOrCreate
     - name: log
       hostPath:
@@ -48,9 +48,9 @@ spec:
         type: DirectoryOrCreate
     - name: crontab
       hostPath:
-        path: ../scripts/db-sync.crontab
+        path: /srv/marc_infra/scripts/db-sync.crontab
         type: File
     - name: sync-script
       hostPath:
-        path: ../scripts/sync_db.sh
+        path: /srv/marc_infra/scripts/sync_db.sh
         type: File
