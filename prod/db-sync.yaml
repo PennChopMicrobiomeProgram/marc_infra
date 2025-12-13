@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: marc-db-sync
+spec:
+  restartPolicy: Always
+  containers:
+    - name: marc-db-sync
+      image: alpine:3.20
+      command: ["/bin/sh", "-c", "crond -f -l 2"]
+      env:
+        - name: SOURCE_DB_PATH
+          value: /nfs/marc.sqlite
+        - name: LOCAL_DB_PATH
+          value: /data/marc.sqlite
+        - name: LAST_SYNC_PATH
+          value: /data/last_sync.txt
+      volumeMounts:
+        - name: nfs-db
+          mountPath: /nfs/marc.sqlite
+          readOnly: true
+        - name: data
+          mountPath: /data
+        - name: log
+          mountPath: /var/log/marc
+        - name: crontab
+          mountPath: /etc/crontabs/root
+          subPath: root
+          readOnly: true
+        - name: sync-script
+          mountPath: /usr/local/bin/sync_db.sh
+          subPath: sync_db.sh
+          readOnly: true
+      securityContext:
+        allowPrivilegeEscalation: false
+  volumes:
+    - name: nfs-db
+      hostPath:
+        path: /nfs/marc.sqlite
+        type: File
+    - name: data
+      hostPath:
+        path: /workspace/marc_infra/data
+        type: DirectoryOrCreate
+    - name: log
+      hostPath:
+        path: /var/log/marc
+        type: DirectoryOrCreate
+    - name: crontab
+      hostPath:
+        path: /workspace/marc_infra/scripts/db-sync.crontab
+        type: File
+    - name: sync-script
+      hostPath:
+        path: /workspace/marc_infra/scripts/sync_db.sh
+        type: File

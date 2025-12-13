@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: marc-web-prod-b
+spec:
+  restartPolicy: Always
+  containers:
+    - name: marc-web-prod-b
+      image: ctbushman/marc_web:0.3.7
+      env:
+        - name: MARC_DB_URL
+          value: sqlite:////data/marc.sqlite
+        - name: MARC_DB_LAST_SYNC
+          value: /data/last_sync.txt
+        - name: MODEL
+          value: gpt-4o-mini
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: marc-openai-api
+              key: OPENAI_API_KEY
+      volumeMounts:
+        - name: data
+          mountPath: /data
+          readOnly: true
+      readinessProbe:
+        httpGet:
+          path: /health
+          port: 80
+        initialDelaySeconds: 10
+        periodSeconds: 30
+        failureThreshold: 3
+      livenessProbe:
+        httpGet:
+          path: /health
+          port: 80
+        initialDelaySeconds: 10
+        periodSeconds: 30
+        failureThreshold: 3
+      securityContext:
+        allowPrivilegeEscalation: false
+  volumes:
+    - name: data
+      hostPath:
+        path: /workspace/marc_infra/data
+        type: DirectoryOrCreate
