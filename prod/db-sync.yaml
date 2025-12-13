@@ -10,14 +10,14 @@ spec:
       command: ["/bin/sh", "-c", "crond -f -l 2"]
       env:
         - name: SOURCE_DB_PATH
-          value: /nfs/marc.sqlite
+          value: /mnt/isilon/marc_genomics/marc_web_db_RO/marc.sqlite
         - name: LOCAL_DB_PATH
           value: /data/marc.sqlite
         - name: LAST_SYNC_PATH
           value: /data/last_sync.txt
       volumeMounts:
         - name: nfs-db
-          mountPath: /nfs/marc.sqlite
+          mountPath: /mnt/isilon/marc_genomics/marc_web_db_RO/marc.sqlite
           readOnly: true
         - name: data
           mountPath: /data
@@ -36,11 +36,11 @@ spec:
   volumes:
     - name: nfs-db
       hostPath:
-        path: /nfs/marc.sqlite
+        path: /mnt/isilon/marc_genomics/marc_web_db_RO/marc.sqlite
         type: File
     - name: data
       hostPath:
-        path: ./data
+        path: ../data
         type: DirectoryOrCreate
     - name: log
       hostPath:
@@ -48,9 +48,9 @@ spec:
         type: DirectoryOrCreate
     - name: crontab
       hostPath:
-        path: ./scripts/db-sync.crontab
+        path: ../scripts/db-sync.crontab
         type: File
     - name: sync-script
       hostPath:
-        path: ./scripts/sync_db.sh
+        path: ../scripts/sync_db.sh
         type: File
