@@ -1,0 +1,54 @@
+networks:
+  appnet:
+    external: true
+    name: marc_appnet
+
+x-log-options: &marc-log-options
+  driver: k8s-file
+  options: &marc-log-driver-options
+    max_size: 10m
+    max_file: 5
+
+x-marc-web-base: &marc-web-base
+  restart: unless-stopped
+  networks: [appnet]
+  volumes:
+    - ../data:/data:ro
+  environment:
+    MARC_DB_URL: sqlite:////data/marc.sqlite
+    MARC_DB_LAST_SYNC: /data/last_sync.txt
+    MODEL: gpt-4o-mini
+    OPENAI_API_KEY: ${OPENAI_API_KEY}
+  healthcheck:
+    test:
+      [
+        "CMD",
+        "python",
+        "-c",
+        "import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://localhost:80/health').getcode()<400 else 1)",
+      ]
+    interval: 30s
+    timeout: 5s
+    retries: 3
+
+x-marc-web-dev: &marc-web-dev
+  <<: *marc-web-base
+  image: ctbushman/marc_web:0.3.7
+
+services:
+  marc-web-dev-a:
+    <<: *marc-web-dev
+    container_name: marc-web-dev-a
+    logging:
+      <<: *marc-log-options
+      options:
+        <<: *marc-log-driver-options
+        path: /var/log/marc/marc-web-dev-a.log
+  marc-web-dev-b:
+    <<: *marc-web-dev
+    container_name: marc-web-dev-b
+    logging:
+      <<: *marc-log-options
+      options:
+        <<: *marc-log-driver-options
+        path: /var/log/marc/marc-web-dev-b.log
