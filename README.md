@@ -22,7 +22,7 @@ marc_infra/
 - **marc-web-dev-a / marc-web-dev-b**: two development instances of `marc_web` on the same network, also mounting the SQLite database read-only.
 - **nginx**: reverse proxy and path-based load balancer, exposing port `8080` on the host. Traffic to `/prod/` is sent to the production pool; `/dev/` is sent to the development pool.
 
-Images default to `ctbushman/marc_web:0.3.5`. Swap images or add build contexts in `prod/` and `dev/` if you need to build locally.
+Images default to `ctbushman/marc_web:0.3.7` and can be overridden per pool via `MARC_WEB_PROD_TAG` and `MARC_WEB_DEV_TAG` in `.env`. Swap images or add build contexts in `prod/` and `dev/` if you need to build locally.
 
 ## Database mounting and sync
 
@@ -56,6 +56,20 @@ To tear down:
 ```bash
 podman-compose down
 ```
+
+### Blue/green upgrade helper
+
+The `scripts/blue_green_upgrade.sh` helper stages a new image tag on the dev pool, waits for health, then promotes to prod with an optional confirmation pause. It updates `.env` with the active tags so future runs know which version is live.
+
+```bash
+# Stage 0.3.8 on dev, then press Enter to promote to prod
+./scripts/blue_green_upgrade.sh 0.3.8
+
+# Fully automated promotion
+./scripts/blue_green_upgrade.sh 0.3.8 --auto-promote
+```
+
+If the previous prod tag differs from the new one, the script prints a rollback command that restores the prior image.
 
 ## Logging
 
