@@ -15,7 +15,8 @@ marc_infra/
 │   └── docker-compose.yaml
 ├── nginx/
 │   ├── docker-compose.yaml
-│   └── nginx.conf         # reverse proxy + load balancer configuration
+│   ├── nginx.conf.template # reverse proxy + load balancer configuration template
+│   └── nginx.conf         # generated from the template (gitignored)
 ├── scripts/               # cron + sync helper scripts
 └── README.md
 ```
@@ -36,6 +37,12 @@ podman network create marc_appnet
 - **nginx** (`nginx/docker-compose.yaml`): reverse proxy and path-based load balancer, exposing port `8080` on the host. Traffic to `/prod/` is sent to the production pool; `/dev/` is sent to the development pool.
 
 Images default to `ctbushman/marc_web:0.3.7`. Swap images or add build contexts in `prod/` and `dev/` if you need to build locally.
+
+The nginx configuration is generated from the template using `envsubst`. Create it once before bringing up nginx for the first time:
+
+```bash
+MARC_PROD_POOL=prod MARC_DEV_POOL=dev envsubst '$MARC_PROD_POOL $MARC_DEV_POOL' < nginx/nginx.conf.template > nginx/nginx.conf
+```
 
 ## Database mounting and sync
 
