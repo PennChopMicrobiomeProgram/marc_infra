@@ -113,9 +113,18 @@ connect_pool_to_network() {
   local network="$2"
   local containers=("marc-web-${pool_name}-a" "marc-web-${pool_name}-b")
   for c in "${containers[@]}"; do
-    if ! podman inspect -f '{{range $name,$v := .NetworkSettings.Networks}}{{println $name}}{{end}}' "$c" 2>/dev/null | grep -qx "$network"; then
-      echo "Connecting $c to network $network..."
-      podman network connect "$network" "$c"
+    if podman inspect -f '{{range $name,$v := .NetworkSettings.Networks}}{{println $name}}{{end}}' "$c" 2>/dev/null | grep -qx "$network"; then
+      continue
+    fi
+
+    echo "Connecting $c to network $network..."
+    if ! output=$(podman network connect "$network" "$c" 2>&1); then
+      if grep -qi "already connected" <<<"$output"; then
+        echo "  $c already connected to $network"
+      else
+        echo "$output" >&2
+        exit 1
+      fi
     fi
   done
 }
