@@ -32,7 +32,7 @@ podman network create marc_appnet
 
 - **db-sync** (`db-sync/docker-compose.yaml`): copies the NFS-hosted SQLite database to `./data/marc.sqlite` on startup and every 10 minutes using cron while writing the latest sync timestamp.
 - **Production web** (`prod/docker-compose.yaml`): two production instances of `marc_web` reading the shared SQLite database read-only. Set `MARC_WEB_IMAGE` to change the image tag and `MARC_POOL` to change the pool name used for container/log naming.
-- **Development web** (`dev/docker-compose.yaml`): two development instances of `marc_web` on the same network, also mounting the SQLite database read-only.
+- **Development web** (`dev/docker-compose.yaml`): single development instance of `marc_web` on the same network, also mounting the SQLite database read-only.
 - **nginx** (`nginx/docker-compose.yaml`): reverse proxy and path-based load balancer, exposing port `8080` on the host. Traffic to `/prod/` is sent to the production pool; `/dev/` is sent to the development pool.
 
 Images default to `ctbushman/marc_web:0.3.7`. Swap images or add build contexts in `prod/` and `dev/` if you need to build locally.
@@ -64,7 +64,7 @@ Then visit:
 
 - http://localhost:8080/ → simple nginx landing page confirming the proxy is reachable with links to each pool
 - http://localhost:8080/prod/ → load-balanced across `marc-web-prod-a` and `marc-web-prod-b`
-- http://localhost:8080/dev/ → load-balanced across `marc-web-dev-a` and `marc-web-dev-b`
+- http://localhost:8080/dev/ → served by `marc-web-dev-a`
 - http://localhost:8080/health → nginx health endpoint returning JSON for quick checks
 
 To tear down, run `podman-compose -f <stack>/docker-compose.yaml down` for each stack you started.

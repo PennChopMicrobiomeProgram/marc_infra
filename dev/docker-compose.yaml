@@ -44,11 +44,3 @@ services:
       options:
         <<: *marc-log-driver-options
         path: /var/log/marc/marc-web-dev-a.log
-  marc-web-dev-b:
-    <<: *marc-web-dev
-    container_name: marc-web-dev-b
-    logging:
-      <<: *marc-log-options
-      options:
-        <<: *marc-log-driver-options
-        path: /var/log/marc/marc-web-dev-b.log
