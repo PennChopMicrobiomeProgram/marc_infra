@@ -33,6 +33,7 @@ NEW_POOL=""
 MARC_DEV_POOL="${MARC_DEV_POOL:-dev}"
 TIMEOUT=300
 COMPOSE_BIN=${COMPOSE_BIN:-podman-compose}
+APP_NETWORK="marc_appnet"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -99,6 +100,26 @@ if [[ "$NEW_POOL" == "$current_pool" ]]; then
   exit 1
 fi
 
+ensure_network() {
+  local network="$1"
+  if ! podman network inspect "$network" >/dev/null 2>&1; then
+    echo "Creating shared app network '$network'..."
+    podman network create "$network" >/dev/null
+  fi
+}
+
+connect_pool_to_network() {
+  local pool_name="$1"
+  local network="$2"
+  local containers=("marc-web-${pool_name}-a" "marc-web-${pool_name}-b")
+  for c in "${containers[@]}"; do
+    if ! podman inspect -f '{{range $name,$v := .NetworkSettings.Networks}}{{println $name}}{{end}}' "$c" 2>/dev/null | grep -qx "$network"; then
+      echo "Connecting $c to network $network..."
+      podman network connect "$network" "$c"
+    fi
+  done
+}
+
 start_pool() {
   local pool_name="$1"
   local image="$2"
@@ -163,7 +184,9 @@ remove_pool() {
   MARC_POOL="$pool_name" "$COMPOSE_BIN" -f prod/docker-compose.yaml -p "marc-${pool_name}" down
 }
 
+ensure_network "$APP_NETWORK"
 start_pool "$NEW_POOL" "$NEW_IMAGE"
+connect_pool_to_network "$NEW_POOL" "$APP_NETWORK"
 healthy_or_wait "$NEW_POOL"
 render_nginx "$NEW_POOL"
 reload_nginx
