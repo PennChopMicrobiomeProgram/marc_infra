@@ -11,7 +11,6 @@ x-log-options: &marc-log-options
 
 x-marc-web-base: &marc-web-base
   restart: unless-stopped
-  networks: [appnet]
   volumes:
     - ../data:/data:ro
   environment:
@@ -39,6 +38,10 @@ services:
   marc-web-prod-a:
     <<: *marc-web-prod
     container_name: marc-web-${MARC_POOL:-prod}-a
+    networks:
+      appnet:
+        aliases:
+          - marc-web-${MARC_POOL:-prod}-a
     logging:
       <<: *marc-log-options
       options:
@@ -47,6 +50,10 @@ services:
   marc-web-prod-b:
     <<: *marc-web-prod
     container_name: marc-web-${MARC_POOL:-prod}-b
+    networks:
+      appnet:
+        aliases:
+          - marc-web-${MARC_POOL:-prod}-b
     logging:
       <<: *marc-log-options
       options:

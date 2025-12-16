@@ -100,11 +100,21 @@ if [[ "$NEW_POOL" == "$current_pool" ]]; then
   exit 1
 fi
 
+echo "Configuration:" \
+  "\n  Current pool: $current_pool" \
+  "\n  New pool: $NEW_POOL" \
+  "\n  Dev pool: $MARC_DEV_POOL" \
+  "\n  Image: $NEW_IMAGE" \
+  "\n  Compose binary: $COMPOSE_BIN" \
+  "\n  App network: $APP_NETWORK"
+
 ensure_network() {
   local network="$1"
   if ! podman network inspect "$network" >/dev/null 2>&1; then
     echo "Creating shared app network '$network'..."
     podman network create "$network" >/dev/null
+  else
+    echo "App network '$network' already exists."
   fi
 }
 
@@ -113,7 +123,10 @@ connect_pool_to_network() {
   local network="$2"
   local containers=("marc-web-${pool_name}-a" "marc-web-${pool_name}-b")
   for c in "${containers[@]}"; do
+    echo "Inspecting network attachments for $c..."
     if podman inspect -f '{{range $name,$v := .NetworkSettings.Networks}}{{println $name}}{{end}}' "$c" 2>/dev/null | grep -qx "$network"; then
+      echo "  $c already connected to $network"
+      echo "  Aliases: $(podman inspect -f '{{range $net,$cfg := .NetworkSettings.Networks}}{{if eq $net \"$network\"}}{{range $i,$alias := $cfg.Aliases}}{{if $i}}, {{end}}{{$alias}}{{end}}{{end}}{{end}}' "$c")"
       continue
     fi
 
@@ -126,6 +139,7 @@ connect_pool_to_network() {
         exit 1
       fi
     fi
+    echo "  Aliases after connect: $(podman inspect -f '{{range $net,$cfg := .NetworkSettings.Networks}}{{if eq $net \"$network\"}}{{range $i,$alias := $cfg.Aliases}}{{if $i}}, {{end}}{{$alias}}{{end}}{{end}}{{end}}' "$c")"
   done
 }
 
@@ -133,6 +147,9 @@ start_pool() {
   local pool_name="$1"
   local image="$2"
   echo "Starting new pool '$pool_name' with image '$image'..."
+  echo "  MARC_POOL=$pool_name"
+  echo "  MARC_WEB_IMAGE=$image"
+  echo "  MARC_DEV_POOL=$MARC_DEV_POOL"
   MARC_POOL="$pool_name" MARC_WEB_IMAGE="$image" "$COMPOSE_BIN" -f prod/docker-compose.yaml -p "marc-${pool_name}" up -d
 }
 
@@ -163,6 +180,8 @@ healthy_or_wait() {
 render_nginx() {
   local pool_name="$1"
   echo "Updating nginx to target pool '$pool_name'..."
+  echo "  Rendering with MARC_PROD_POOL=$pool_name"
+  echo "  Rendering with MARC_DEV_POOL=$MARC_DEV_POOL"
   MARC_PROD_POOL="$pool_name" MARC_DEV_POOL="$MARC_DEV_POOL" \
     envsubst '$MARC_PROD_POOL $MARC_DEV_POOL' < "$nginx_template" > "$nginx_conf"
 }
