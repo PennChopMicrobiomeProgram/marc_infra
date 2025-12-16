@@ -144,6 +144,19 @@ reload_nginx() {
   podman exec nginx nginx -s reload
 }
 
+verify_pool_reachable_via_nginx() {
+  local pool_name="$1"
+  local targets=("marc-web-${pool_name}-a" "marc-web-${pool_name}-b")
+  echo "Verifying nginx can reach the new pool (${targets[*]})..."
+  for t in "${targets[@]}"; do
+    echo "  Checking http://${t}:80/health"
+    if ! podman exec nginx wget -qO- --timeout=5 "http://${t}:80/health" >/dev/null; then
+      echo "  Failed to reach ${t} via nginx" >&2
+      return 1
+    fi
+  done
+}
+
 remove_pool() {
   local pool_name="$1"
   echo "Removing old pool '$pool_name'..."
@@ -154,6 +167,14 @@ start_pool "$NEW_POOL" "$NEW_IMAGE"
 healthy_or_wait "$NEW_POOL"
 render_nginx "$NEW_POOL"
 reload_nginx
+
+if ! verify_pool_reachable_via_nginx "$NEW_POOL"; then
+  echo "New pool is not reachable from nginx; rolling back to $current_pool" >&2
+  render_nginx "$current_pool"
+  reload_nginx
+  remove_pool "$NEW_POOL"
+  exit 1
+fi
 
 if [[ -n "$current_pool" ]]; then
   remove_pool "$current_pool"

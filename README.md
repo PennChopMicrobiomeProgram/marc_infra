@@ -82,8 +82,8 @@ Use the helper script to perform a blue/green-style upgrade without dropping tra
 
 1. Starts a new production pool (with unique container names based on `MARC_POOL`) using the provided image tag.
 2. Waits for both new containers to become healthy.
-3. Regenerates `nginx/nginx.conf` from `nginx/nginx.conf.template` to point production traffic at the new pool and reloads nginx.
-4. Shuts down the previous production pool.
+3. Regenerates `nginx/nginx.conf` from `nginx/nginx.conf.template` to point production traffic at the new pool, reloads nginx, and verifies the proxy can reach each new backend.
+4. Shuts down the previous production pool only after the new pool is reachable from nginx; otherwise it rolls back to the prior pool.
 
 Example:
 
