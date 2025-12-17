@@ -10,14 +10,8 @@ sudo chown $USER /var/log/marc
 
 sudo podman network create marc_appnet
 
-{
-  echo "MARC_PROD_IMAGE=ctbushman/marc_web:0.3.9"
-  echo "MARC_PROD_POOL=prod-039"
-  echo "MARC_DEV_IMAGE=ctbushman/marc_web:0.3.9"
-  echo "MARC_DEV_POOL=dev"
-  echo "OPENAI_API_KEY=sk-123"
-  echo "MARC_NFS_DB_PATH=/mnt/isilon/marc_genomics/marc_web_db_RO/marc.sqlite"
-} > .env
+cat example.env > .env
+### EDIT .env WITH APPROPRIATE VALUES ###
 
 sudo podman-compose -f prod/docker-compose.yaml up -d
 sudo podman-compose -f dev/docker-compose.yaml up -d
