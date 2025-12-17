@@ -25,7 +25,7 @@ services:
       LOCAL_DB_PATH: /data/marc.sqlite
       LAST_SYNC_PATH: /data/last_sync.txt
     volumes:
-      - ${MARC_NFS_DB_PATH}:/nfs/marc.sqlite:ro
+      - ${MARC_NFS_DB_PATH}:/nfs:Z
       - ${MARC_LOCAL_DB_PATH}:/data
       - /var/log/marc:/var/log/marc
       - ../scripts/db-sync.crontab:/etc/crontabs/root:ro

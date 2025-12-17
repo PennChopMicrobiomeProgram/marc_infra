@@ -13,6 +13,9 @@ sudo podman network create marc_appnet
 cat example.env > .env
 ### EDIT .env WITH APPROPRIATE VALUES ###
 
+crontab -e
+### Write: */10 * * * * ~/marc_infra/scripts/sync_db.sh >> /var/log/marc/marc-db-sync.log 2>&1 ###
+
 sudo podman-compose -f prod/docker-compose.yaml up -d
 sudo podman-compose -f dev/docker-compose.yaml up -d
 
