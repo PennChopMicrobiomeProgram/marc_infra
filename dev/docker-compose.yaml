@@ -8,11 +8,11 @@ x-marc-web-base: &marc-web-base
   restart: unless-stopped
   networks: [appnet]
   volumes:
-    - ../data:/data:ro
+    - ${MARC_LOCAL_DB_PATH}:/data:ro
   environment:
     MARC_DB_URL: sqlite:////data/marc.sqlite
     MARC_DB_LAST_SYNC: /data/last_sync.txt
-    MODEL: gpt-4o-mini
+    MODEL: ${OPENAI_MODEL}
     OPENAI_API_KEY: ${OPENAI_API_KEY}
   healthcheck:
     test:
