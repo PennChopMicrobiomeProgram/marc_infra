@@ -15,7 +15,8 @@ marc_infra/
 │   └── docker-compose.yaml
 ├── nginx/
 │   ├── docker-compose.yaml
-│   └── nginx.conf         # reverse proxy + load balancer configuration
+│   ├── nginx.conf.template # reverse proxy + load balancer configuration template
+│   └── nginx.conf         # generated from the template (gitignored)
 ├── scripts/               # cron + sync helper scripts
 └── README.md
 ```
@@ -31,11 +32,17 @@ podman network create marc_appnet
 ## Services by stack
 
 - **db-sync** (`db-sync/docker-compose.yaml`): copies the NFS-hosted SQLite database to `./data/marc.sqlite` on startup and every 10 minutes using cron while writing the latest sync timestamp.
-- **Production web** (`prod/docker-compose.yaml`): two production instances of `marc_web` reading the shared SQLite database read-only.
-- **Development web** (`dev/docker-compose.yaml`): two development instances of `marc_web` on the same network, also mounting the SQLite database read-only.
+- **Production web** (`prod/docker-compose.yaml`): two production instances of `marc_web` reading the shared SQLite database read-only. Set `MARC_WEB_IMAGE` to change the image tag and `MARC_POOL` to change the pool name used for container/log naming.
+- **Development web** (`dev/docker-compose.yaml`): single development instance of `marc_web` on the same network, also mounting the SQLite database read-only.
 - **nginx** (`nginx/docker-compose.yaml`): reverse proxy and path-based load balancer, exposing port `8080` on the host. Traffic to `/prod/` is sent to the production pool; `/dev/` is sent to the development pool.
 
 Images default to `ctbushman/marc_web:0.3.7`. Swap images or add build contexts in `prod/` and `dev/` if you need to build locally.
+
+The nginx configuration is generated from the template using `envsubst`. Create it once before bringing up nginx for the first time:
+
+```bash
+MARC_PROD_POOL=prod MARC_DEV_POOL=dev envsubst '$MARC_PROD_POOL $MARC_DEV_POOL' < nginx/nginx.conf.template > nginx/nginx.conf
+```
 
 ## Database mounting and sync
 
@@ -64,10 +71,34 @@ Then visit:
 
 - http://localhost:8080/ → simple nginx landing page confirming the proxy is reachable with links to each pool
 - http://localhost:8080/prod/ → load-balanced across `marc-web-prod-a` and `marc-web-prod-b`
-- http://localhost:8080/dev/ → load-balanced across `marc-web-dev-a` and `marc-web-dev-b`
+- http://localhost:8080/dev/ → served by `marc-web-dev-a`
 - http://localhost:8080/health → nginx health endpoint returning JSON for quick checks
 
 To tear down, run `podman-compose -f <stack>/docker-compose.yaml down` for each stack you started.
+
+## Zero-downtime production upgrades
+
+Use the helper script to perform a blue/green-style upgrade without dropping traffic. The script:
+
+1. Starts a new production pool (with unique container names based on `MARC_POOL`) using the provided image tag.
+2. Waits for both new containers to become healthy.
+3. Ensures the `marc_appnet` network exists and that the new containers are attached to it alongside nginx.
+4. Regenerates `nginx/nginx.conf` from `nginx/nginx.conf.template` to point production traffic at the new pool, reloads nginx, and verifies the proxy can reach each new backend.
+5. Shuts down the previous production pool only after the new pool is reachable from nginx; otherwise it rolls back to the prior pool.
+
+Example:
+
+```bash
+export OPENAI_API_KEY=your_api_key_here
+./scripts/upgrade_prod_pool.sh --image ctbushman/marc_web:0.3.8
+```
+
+Options:
+
+- `--pool`: Override the generated pool name (defaults to `prod-<image-tag>`).
+- `--dev-pool`: Change the dev pool name nginx targets (defaults to `dev`).
+- `--timeout`: How long to wait for the new containers to report healthy (default 300s).
+- `--compose-bin`: Compose binary to use (defaults to `podman-compose`).
 
 ## Logging
 

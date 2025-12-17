@@ -11,7 +11,6 @@ x-log-options: &marc-log-options
 
 x-marc-web-base: &marc-web-base
   restart: unless-stopped
-  networks: [appnet]
   volumes:
     - ../data:/data:ro
   environment:
@@ -33,22 +32,30 @@ x-marc-web-base: &marc-web-base
 
 x-marc-web-prod: &marc-web-prod
   <<: *marc-web-base
-  image: ctbushman/marc_web:0.3.7
+  image: ${MARC_WEB_IMAGE:-ctbushman/marc_web:0.3.7}
 
 services:
   marc-web-prod-a:
     <<: *marc-web-prod
-    container_name: marc-web-prod-a
+    container_name: marc-web-${MARC_POOL:-prod}-a
+    networks:
+      appnet:
+        aliases:
+          - marc-web-${MARC_POOL:-prod}-a
     logging:
       <<: *marc-log-options
       options:
         <<: *marc-log-driver-options
-        path: /var/log/marc/marc-web-prod-a.log
+        path: /var/log/marc/marc-web-${MARC_POOL:-prod}-a.log
   marc-web-prod-b:
     <<: *marc-web-prod
-    container_name: marc-web-prod-b
+    container_name: marc-web-${MARC_POOL:-prod}-b
+    networks:
+      appnet:
+        aliases:
+          - marc-web-${MARC_POOL:-prod}-b
     logging:
       <<: *marc-log-options
       options:
         <<: *marc-log-driver-options
-        path: /var/log/marc/marc-web-prod-b.log
+        path: /var/log/marc/marc-web-${MARC_POOL:-prod}-b.log
