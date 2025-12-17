@@ -33,14 +33,14 @@ x-marc-web-base: &marc-web-base
 
 x-marc-web-dev: &marc-web-dev
   <<: *marc-web-base
-  image: ctbushman/marc_web:0.3.7
+  image: ${MARC_DEV_IMAGE:?MARC_DEV_IMAGE is required}
 
 services:
   marc-web-dev-a:
     <<: *marc-web-dev
-    container_name: marc-web-dev-a
+    container_name: marc-web-${MARC_DEV_POOL:?MARC_DEV_POOL is required}-a
     logging:
       <<: *marc-log-options
       options:
         <<: *marc-log-driver-options
-        path: /var/log/marc/marc-web-dev-a.log
+        path: /var/log/marc/marc-web-${MARC_DEV_POOL:?MARC_DEV_POOL is required}-a.log

@@ -6,21 +6,19 @@ usage() {
 Upgrade the production marc_web pool with zero downtime by standing up a new pool,
 switching nginx to it, and removing the old pool.
 
-Usage: upgrade_prod_pool.sh --image <image[:tag]> [--pool <pool-name>] [--dev-pool <dev-pool>]
-                            [--timeout <seconds>] [--compose-bin <binary>]
+Usage: upgrade_prod_pool.sh --image <image[:tag]> --pool <pool-name> --dev-pool <dev-pool> \
+                           --timeout <seconds> --compose-bin <binary>
 
   --image        Required. Container image (with tag) to deploy to the new pool.
-  --pool         Optional. Pool name suffix to use for the new containers
-                 (default: prod-<sanitized image tag>).
-  --dev-pool     Optional. Current dev pool name referenced by nginx (default: dev).
-  --timeout      Optional. Seconds to wait for the new containers to become healthy
-                 before aborting (default: 300).
-  --compose-bin  Optional. Compose binary to run (default: podman-compose).
+  --pool         Required. Pool name suffix to use for the new containers.
+  --dev-pool     Required. Current dev pool name referenced by nginx.
+  --timeout      Required. Seconds to wait for the new containers to become healthy
+                 before aborting.
+  --compose-bin  Required. Compose binary to run (e.g., podman-compose).
   -h, --help     Show this help message.
 
 Examples:
-  upgrade_prod_pool.sh --image ctbushman/marc_web:0.3.8
-  upgrade_prod_pool.sh --image ctbushman/marc_web:0.3.8 --pool prod-blue
+  upgrade_prod_pool.sh --image ctbushman/marc_web:0.3.8 --pool prod-blue --dev-pool dev --timeout 300 --compose-bin podman-compose
 USAGE
 }
 
@@ -30,9 +28,9 @@ cd "$ROOT_DIR"
 
 NEW_IMAGE=""
 NEW_POOL=""
-MARC_DEV_POOL="${MARC_DEV_POOL:-dev}"
-TIMEOUT=300
-COMPOSE_BIN=${COMPOSE_BIN:-podman-compose}
+MARC_DEV_POOL=""
+TIMEOUT=""
+COMPOSE_BIN=""
 APP_NETWORK="marc_appnet"
 
 while [[ $# -gt 0 ]]; do
@@ -62,6 +60,11 @@ if [[ -z "$NEW_IMAGE" ]]; then
   exit 1
 fi
 
+: "${NEW_POOL:?--pool is required}"
+: "${MARC_DEV_POOL:?--dev-pool (or MARC_DEV_POOL) is required}"
+: "${TIMEOUT:?--timeout is required}"
+: "${COMPOSE_BIN:?--compose-bin is required}"
+
 for bin in "$COMPOSE_BIN" podman envsubst; do
   if ! command -v "$bin" >/dev/null 2>&1; then
     echo "Required binary '$bin' not found" >&2
@@ -83,16 +86,9 @@ if [[ ! -f "$nginx_template" ]]; then
 fi
 
 current_pool=$(grep -oE 'marc-web-([A-Za-z0-9_.-]+)-a:80' "$nginx_conf" | head -n1 | sed -E 's/marc-web-([A-Za-z0-9_.-]+)-a:80/\1/')
-current_pool=${current_pool:-prod}
-
-if [[ -z "$NEW_POOL" ]]; then
-  tag_part=${NEW_IMAGE##*:}
-  tag_part=${tag_part:-latest}
-  safe_tag=$(echo "$tag_part" | tr '/:@' '-' | tr -cd '[:alnum:]-')
-  if [[ -z "$safe_tag" ]]; then
-    safe_tag="v$(date +%Y%m%d%H%M%S)"
-  fi
-  NEW_POOL="prod-${safe_tag}"
+if [[ -z "$current_pool" ]]; then
+  echo "Could not determine the current production pool from $nginx_conf" >&2
+  exit 1
 fi
 
 if [[ "$NEW_POOL" == "$current_pool" ]]; then
@@ -147,10 +143,10 @@ start_pool() {
   local pool_name="$1"
   local image="$2"
   echo "Starting new pool '$pool_name' with image '$image'..."
-  echo "  MARC_POOL=$pool_name"
-  echo "  MARC_WEB_IMAGE=$image"
+  echo "  MARC_PROD_POOL=$pool_name"
+  echo "  MARC_PROD_IMAGE=$image"
   echo "  MARC_DEV_POOL=$MARC_DEV_POOL"
-  MARC_POOL="$pool_name" MARC_WEB_IMAGE="$image" "$COMPOSE_BIN" -f prod/docker-compose.yaml -p "marc-${pool_name}" up -d
+  MARC_PROD_POOL="$pool_name" MARC_PROD_IMAGE="$image" "$COMPOSE_BIN" -f prod/docker-compose.yaml -p "marc-${pool_name}" up -d
 }
 
 healthy_or_wait() {
@@ -209,7 +205,7 @@ verify_pool_reachable_via_nginx() {
 remove_pool() {
   local pool_name="$1"
   echo "Removing old pool '$pool_name'..."
-  MARC_POOL="$pool_name" "$COMPOSE_BIN" -f prod/docker-compose.yaml -p "marc-${pool_name}" down
+  MARC_PROD_POOL="$pool_name" "$COMPOSE_BIN" -f prod/docker-compose.yaml -p "marc-${pool_name}" down
 }
 
 ensure_network "$APP_NETWORK"
