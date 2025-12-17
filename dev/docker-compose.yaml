@@ -3,11 +3,6 @@ networks:
     external: true
     name: marc_appnet
 
-x-log-options: &marc-log-options
-  driver: k8s-file
-  options: &marc-log-driver-options
-    max_size: 10m
-    max_file: 5
 
 x-marc-web-base: &marc-web-base
   restart: unless-stopped
@@ -33,14 +28,9 @@ x-marc-web-base: &marc-web-base
 
 x-marc-web-dev: &marc-web-dev
   <<: *marc-web-base
-  image: ctbushman/marc_web:0.3.7
+  image: ${MARC_DEV_IMAGE:?MARC_DEV_IMAGE is required}
 
 services:
-  marc-web-dev-a:
+  marc-web-dev:
     <<: *marc-web-dev
-    container_name: marc-web-dev-a
-    logging:
-      <<: *marc-log-options
-      options:
-        <<: *marc-log-driver-options
-        path: /var/log/marc/marc-web-dev-a.log
+    container_name: marc-web-dev
