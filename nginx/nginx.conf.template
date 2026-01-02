@@ -10,7 +10,7 @@ http {
     }
 
     upstream marc_web_dev_backend {
-        server marc-web-${MARC_DEV_POOL}-a:80;
+        server marc-web-${MARC_DEV_POOL}:80;
     }
 
     server {
