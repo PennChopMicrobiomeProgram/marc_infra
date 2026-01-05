@@ -1,1 +1,0 @@
-*/10 * * * * /usr/local/bin/sync_db.sh >> /var/log/marc/marc-db-sync.log 2>&1
