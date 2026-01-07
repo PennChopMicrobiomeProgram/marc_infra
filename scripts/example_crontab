@@ -1,0 +1,7 @@
+# Example RO database sync job
+*/10 * * * * ~/marc_infra/scripts/sync_db.sh >> /var/log/marc/marc-db-sync.log 2>&1
+
+
+# Example database backup job
+MAILTO="user1@chop.edu,user2@chop.edu"
+5 8 * * 0 /mnt/isilon/marc_genomics/marc_web_db_RO/backup.sh

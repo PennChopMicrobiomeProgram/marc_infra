@@ -22,6 +22,9 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - /var/log/marc:/var/log/marc
+      # The :ro,Z suffix makes the file read-only and relabels it for SELinux
+      # The 'Z' is important to make the container read the file from the system
+      # instead of trying to read a cached version.
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro,Z
+      - /var/log/marc:/var/log/marc,Z
     networks: [appnet]

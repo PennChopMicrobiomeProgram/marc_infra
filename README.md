@@ -1,6 +1,6 @@
 # marc_infra
 
-Podman Compose stacks for running the `marc_web` application with separate production, development, database sync, and nginx layers that all attach to a shared Podman network.
+Podman Compose stacks for running the `marc_web` application with separate production, development, and nginx layers that all attach to a shared Podman network.
 
 ## Start on a fresh system
 
