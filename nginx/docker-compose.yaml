@@ -20,7 +20,7 @@ services:
         <<: *marc-log-driver-options
         path: /var/log/marc/nginx.log
     ports:
-      - "8080:80"
+      - "80:80"
     volumes:
       # The :ro,Z suffix makes the file read-only and relabels it for SELinux
       # The 'Z' is important to make the container read the file from the system
