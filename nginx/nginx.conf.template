@@ -5,11 +5,11 @@ http {
     error_log  /var/log/marc/nginx_error.log;
 
     upstream marc_web_prod_backend {
-        server marc-web-${MARC_PROD_POOL}:80;
+        server marc-web-${MARC_PROD_POOL}:8080;
     }
 
     upstream marc_web_dev_backend {
-        server marc-web-${MARC_DEV_POOL}:80;
+        server marc-web-${MARC_DEV_POOL}:8080;
     }
 
     server {
