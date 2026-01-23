@@ -24,7 +24,7 @@ x-marc-web-base: &marc-web-base
         "CMD",
         "python",
         "-c",
-        "import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://localhost:80/health').getcode()<400 else 1)",
+        "import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://localhost:8080/health').getcode()<400 else 1)",
       ]
     interval: 30s
     timeout: 5s
