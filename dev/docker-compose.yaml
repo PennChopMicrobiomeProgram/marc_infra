@@ -5,8 +5,6 @@ networks:
 
 
 x-marc-web-base: &marc-web-base
-  ports:
-    - "80:8080"
   restart: unless-stopped
   networks: [appnet]
   volumes:
