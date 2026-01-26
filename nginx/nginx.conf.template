@@ -15,6 +15,8 @@ http {
     server {
         listen 80;
         server_name _;
+        proxy_intercept_errors on;
+        error_page 502 503 504 /_service_down.html;
 
         location = / {
             default_type text/html;
@@ -46,6 +48,12 @@ http {
             proxy_set_header X-Forwarded-Prefix /dev;
             proxy_set_header X-Script-Name /dev;
             proxy_redirect / /dev/;
+        }
+
+        location = /_service_down.html {
+            internal;
+            default_type text/html;
+            return 503 "<!doctype html><html><head><title>marc service unavailable</title><meta charset=\"utf-8\"></head><body><h1>Site temporarily unavailable</h1><p>The site is down temporarily and will be back up soon.</p><p>If the problem persists, please email <a href=\"mailto:moustafaam@chop.edu\">moustafaam@chop.edu</a>.</p></body></html>";
         }
     }
 }
