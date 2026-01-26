@@ -15,8 +15,17 @@ http {
     server {
         listen 80;
         server_name _;
+        return 301 https://$host$request_uri;
+    }
+
+    server {
+        listen 443 ssl;
+        server_name _;
         proxy_intercept_errors on;
         error_page 502 503 504 /_service_down.html;
+
+        ssl_certificate ${MARC_SSL_CERTIFICATE};
+        ssl_certificate_key ${MARC_SSL_CERTIFICATE_KEY};
 
         location = / {
             default_type text/html;
