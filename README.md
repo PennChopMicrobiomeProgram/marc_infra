@@ -22,16 +22,16 @@ crontab -e
 sudo podman-compose -f dev/docker-compose.yaml up -d
 sudo podman-compose -f prod/docker-compose.yaml up -d
 
-envsubst '$MARC_PROD_POOL $MARC_DEV_POOL' < nginx/nginx.conf.template > nginx/nginx.conf
+envsubst '$MARC_PROD_POOL $MARC_DEV_POOL $MARC_SSL_CERTIFICATE $MARC_SSL_CERTIFICATE_KEY' < nginx/nginx.conf.template > nginx/nginx.conf
 sudo podman-compose -f nginx/docker-compose.yaml up -d
 ```
 
 Then visit (replacing localhost with the actual server address e.g. reslnmarc02.research.chop.edu):
 
-- http://localhost:8080/ → simple nginx landing page confirming the proxy is reachable with links to each pool
-- http://localhost:8080/prod/ → served by the configured production pool
-- http://localhost:8080/dev/ → served by the configured development pool
-- http://localhost:8080/health → nginx health endpoint returning JSON for quick checks
+- https://localhost/ → simple nginx landing page confirming the proxy is reachable with links to each pool
+- https://localhost/prod/ → served by the configured production pool
+- https://localhost/dev/ → served by the configured development pool
+- https://localhost/health → nginx health endpoint returning JSON for quick checks
 
 ## Tear down
 
