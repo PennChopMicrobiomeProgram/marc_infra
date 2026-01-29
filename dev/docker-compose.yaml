@@ -12,7 +12,7 @@ services:
     ports:
       - "8081:8080"
     volumes:
-      - ${MARC_LOCAL_DB_PATH}:/data:ro
+      - ${MARC_LOCAL_DB_PATH}:/data:ro,Z
     environment:
       MARC_DB_URL: sqlite:////data/marc.sqlite?mode=ro&immutable=1
       MARC_DB_LAST_SYNC: /data/last_sync.txt
