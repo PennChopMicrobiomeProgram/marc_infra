@@ -3,34 +3,29 @@ networks:
     external: true
     name: marc_appnet
 
-
-x-marc-web-base: &marc-web-base
-  restart: unless-stopped
-  networks: [appnet]
-  volumes:
-    - ${MARC_LOCAL_DB_PATH}:/data:ro
-  environment:
-    MARC_DB_URL: sqlite:////data/marc.sqlite?mode=ro&immutable=1
-    MARC_DB_LAST_SYNC: /data/last_sync.txt
-    MODEL: ${OPENAI_MODEL}
-    OPENAI_API_KEY: ${OPENAI_API_KEY}
-  healthcheck:
-    test:
-      [
-        "CMD",
-        "python",
-        "-c",
-        "import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://localhost:8080/health').getcode()<400 else 1)",
-      ]
-    interval: 30s
-    timeout: 5s
-    retries: 3
-
-x-marc-web-dev: &marc-web-dev
-  <<: *marc-web-base
-  image: ${MARC_DEV_IMAGE:?MARC_DEV_IMAGE is required}
-
 services:
   marc-web-dev:
-    <<: *marc-web-dev
     container_name: marc-web-dev
+    image: ${MARC_DEV_IMAGE:?MARC_DEV_IMAGE is required}
+    restart: unless-stopped
+    networks: [appnet]
+    ports:
+      - "8081:8080"
+    volumes:
+      - ${MARC_LOCAL_DB_PATH}:/data:ro
+    environment:
+      MARC_DB_URL: sqlite:////data/marc.sqlite?mode=ro&immutable=1
+      MARC_DB_LAST_SYNC: /data/last_sync.txt
+      MODEL: ${OPENAI_MODEL}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://localhost:8080/health').getcode()<400 else 1)",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
