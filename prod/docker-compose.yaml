@@ -12,7 +12,7 @@ x-log-options: &marc-log-options
 x-marc-web-base: &marc-web-base
   restart: unless-stopped
   volumes:
-    - ${MARC_LOCAL_DB_PATH}:/data:ro
+    - ${MARC_LOCAL_DB_PATH}:/data:ro,Z
   environment:
     MARC_DB_URL: sqlite:////data/marc.sqlite?mode=ro&immutable=1
     MARC_DB_LAST_SYNC: /data/last_sync.txt
