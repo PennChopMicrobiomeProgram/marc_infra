@@ -42,6 +42,8 @@ services:
       appnet:
         aliases:
           - marc-web-${MARC_PROD_POOL:?MARC_PROD_POOL is required}
+    ports:
+      - "8080:8080"
     logging:
       <<: *marc-log-options
       options:
