@@ -6,13 +6,13 @@ networks:
 services:
   marc-web-dev:
     container_name: marc-web-dev
-    image: ${MARC_DEV_IMAGE:?MARC_DEV_IMAGE is required}
+    image: tanesc/marc_web:0.4.1
     restart: unless-stopped
     networks: [appnet]
     ports:
       - "8081:8080"
     volumes:
-      - ${MARC_LOCAL_DB_PATH}:/data:ro,Z
+      - /srv/marc_infra:/data:ro,Z
     environment:
       MARC_DB_URL: sqlite:////data/marc.sqlite?mode=ro&immutable=1
       MARC_DB_LAST_SYNC: /data/last_sync.txt
