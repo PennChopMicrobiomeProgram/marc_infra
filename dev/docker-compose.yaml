@@ -6,7 +6,7 @@ networks:
 services:
   marc-web-dev:
     container_name: marc-web-dev
-    image: tanesc/marc_web:0.4.1
+    image: chopmicrobiome/marc_web:0.4.2
     restart: unless-stopped
     networks: [appnet]
     ports:
@@ -16,6 +16,7 @@ services:
     environment:
       MARC_DB_URL: sqlite:////data/marc.sqlite?mode=ro&immutable=1
       MARC_DB_LAST_SYNC: /data/last_sync.txt
+      MARC_TREE_FP: /data/trees
       MODEL: ${OPENAI_MODEL}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
     healthcheck:
